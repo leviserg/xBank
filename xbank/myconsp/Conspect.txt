@@ -1,0 +1,325 @@
+*****************
+	run  G i t B a s h  at rightclick on select folder
+	
+	https://github.com/leviserg/xBank.git
+	git clone <link from><link where>
+	
+		git clone https://github.com/leviserg/xBank.git C:\OSPanel\domains\{folderName}
+	
+	org
+	
+		git remote add {name} {url}
+		
+	git pull 						(get updates from gitHub)
+	git log 						(check what was happen a moment ago)
+	git status 						(check  l o c a l  changes)
+	git branch 						(view all branches)
+	git checkout {branchName}		
+	git add .						(fix changes)
+	git commit -m "change_description for example task#{..} have been done"
+	git push -u origin {brancheName} (send commit to gitHub)
+******************
+*** install ******
+	only for the first run once 
+c o m p o s e r 
+	- load composer /* https://getcomposer.org/download/   */
+l a r a v e l
+	- load laravel : cmd prompt - 'composer global require "laravel/installer"'
+	O R:
+cmd prompt - from OpenServer/Advanced/Console
+	'cd C:\openserver\domains\localhost' - install laravel in localhost dir
+	'composer create-project laravel/laravel laravel --prefer-dist'
+***
+--- create site from composer ---
+s i t e
+	cd C:\OSPanel\domains
+	composer create-project --prefer-dist laravel/laravel www.larapp.com
+		... wait ... for creation...
+-------------------------------------------------------------------------------
+подключение к БД в файле .env
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myflarapp
+DB_USERNAME=root
+DB_PASSWORD=
+
+ а также config/database.php (default etc)
+-------------------------------------------------------------------------------
+Очистка БД от всех таблиц - php artisan migrate:reset
+
+Создание таблицы tasks
+	подготовка миграции (название таблицы)
+ - php artisan make:migration create_tasks_table --create=tasks
+ 
+ reports
+ customers
+ trasnactions
+ 
+ php artisan make:migration create_reports_table --create=reports
+ php artisan make:migration create_customers_table --create=customers
+ php artisan make:migration create_trasnactions_table --create=transactions
+ 
+
+
+Настройка полей таблицы в файле, который создается автом. после подготовки миграции: database/migrations/2018...._create_tasks_table.php
+
+	function up -> Schema ->....integer/text/... - названия и типы полей
+	
+после настройки структуры таблицы через консоль:
+ - php artisan migrate
+ ... создается таблица с указанной структурой
+ для корректировки миграции при изменении в php файле миграции
+ - php artisan migrate:refresh
+
+ Главные маршруты - routes/web.php
+ 
+ 
+ **** Роутинг по БД ****
+
+Route::get('/', function () {
+	$tasks = DB::table('mytasks')->get();
+    return view('tasks.index', compact('tasks'));
+});
+
+Route::get('/task{task}', function ($id) {
+	$task = DB::table('mytasks')->find($id);
+    return view('tasks.show', compact('task'));
+});
+ 
+ 
+ 
+ ******* =========== Модель ============ ******** 
+ 
+ Создать модель - соответствует названию  т а б л и ц ы
+  - php artisan make:model TableName // создается в папке app/
+  - php artisan serve       - start server    Ctrl+C - stop server
+  Выбрать все данные таблицы: $tasks = App\TableName::all();
+  Выбрать данные таблицы по признаку(н-р id): $task = App\TableName::find($id);
+  
+ +++ Создание модели + миграции (таблицы) автоматически через контроллер +++
+ - php artisan migrate:reset / очистка
+ - php artisan make:model TableName -m -c   // -m - с миграцией   -с - с котроллером
+	потом в файле миграции database/migrations/2018...._create_Table_name_table.php настраиваем структуру таблицы (ф-я up) integer/text/boolean etc
+ - php artisan migrate - создаем таблицу, и потом ее заполняем ч-з phpmyadmin
+ 
+ в модели для выделения данных по признаку можно писать свои методы(функции) - по названиях колонок таблицы н-р:
+ 
+ class MyTasks extends Model
+{
+    public static function isFixed(){
+    	return static::where('fixed', 1)->get(); // fixed - название колонки таблицы, 1 - признак проверки
+    }
+}
+их потом используем в маршрутах web.php по аналогии с all или find: $tasks = App\MyTasks::isFixed();
+
+Route::get('/', function () {
+	$tasks = App\MyTasks::all(); // ::isFixed();
+    return view('tasks.index', compact('tasks'));
+});
+                  
+Route::get('/task{task}', function ($id) { // {task} = 1,2... -перед. ч-з foreach
+	$task = App\MyTasks::find($id);
+    return view('tasks.show', compact('task'));
+});
+
+******** ======== Контроллеры ============ ******** App/Http/Controllers 
+
+ - php artisan make:controller ControllerName
+
+используются для определения маршрутов - обработки запросов от пользователя, куда идти, связанных через классы контроллера
+
+-- web.php ---
+
+Route::get('/','MyTasksController@index'); // "@ControllerMethodName"
+Route::get('/task{task}','MyTasksController@show');
+
+--- controller file ---
+use App;// !!!!
+class MyTasksController extends Controller
+{
+    public function index(){
+		$tasks = App\MyTasks::all(); //::isFixed();
+	    return view('tasks.index', compact('tasks'));
+    }
+
+    public function show($id){
+    	$task = App\MyTasks::find($id);
+    	return view('tasks.show', compact('task'));
+    }
+}
+
+******** ======== FrontEnd ============ ********
+0) Создаем layout.blade.php - в папке views с функцией @ield в теге <body>
+1) @yield('....') - используется для вывода содержимого секции с именем .... - в <body> файла layout.blade.php
+
+2) маршрут в файле web.php
+
+   Route::get('/','PostController@index'); // ссылка на контроллер Posts, метод index
+   
+3) Создание миграции, модели и контроллера Post // в файле .env настроить имя БД (если ее нет - создать в phpmyadmin)
+
+ - php artisan make:model Post -mc // модель app/Post.php, контроллер app/http/COntrollers/PostController.php, ! но таблица под названием posts !!! будет создана
+ 
+4) Правка миграции database/migrations/2018_..._create_posts_table.php
+	добавляем поля title(string) и descr(text)
+	
+	        $table->string('title');
+            $table->text('descr');
+
+5) Добавление миграции в БД - php artisan migrate
+
+6)Правка контроллера app/http/controllers/PostController.php - создастся автоматически
+
+	class PostController extends Controller
+	{
+		public function index(){
+			return view('posts.index'); // перенаправление из маршрута в web.php на файл posts/index.php // папку views/posts нужно создать вручную
+		}
+	}
+	
+	public function show($id){
+    	$post = App\Post::find($id);
+    	return view('posts.show', compact('post'));
+    }
+
+7) Создаем папку views/posts + в ней файл index.blade.php - наследник от layout.blade.php
+	extends('layout');
+	
+	@section('content') // -- по названию секции в layout
+		texttexttexttexttexttext
+	@endsection
+
+	@section('footer') // -- создать в layout.blade.php - @yield('footer')
+		footer texttexttexttexttexttext
+	@endsection	
+	
+8) bootstrap - www.getbootstrap.com/examples - select some - view code - copy all - paste in layout.blade.php
+	copy link bootstrap.css from bootstrap/main/download/CDN - paste in the <head> tag at the layout.blade.php
+	go through the link of album.css at the bootstrap example code - copy content and paste it into public/css/album.css (new file)
+
+	**** layout.blade.php ****
+	
+	<body>
+		<header>
+			@include('layouts.nav')
+		</header>
+
+    	@yield('content')
+
+		<footer class="text-muted">
+			@include('layouts.footer')
+		</footer>
+	</body>
+	
+	
+	**** index.blade.php *****
+	
+@extends('layout')
+@section('content')
+	    <div class="container">
+          <div class="row">
+          	@foreach($posts as $post)
+	            <div class="col-md-4">
+	              <div class="card mb-4 shadow-sm">
+	              	<div class="card-header">
+	              		<b>{{$post->title}}</b>
+	              	</div>
+	                <div class="card-body">
+	                  <p class="card-text">{{$post->descr}}</p>
+	                  <div class="d-flex justify-content-between align-items-center">
+	                      <a href="/post{{$post->id}}" class="btn btn-sm btn-outline-secondary">View</a>
+	                    <small class="text-muted">{{$post->updated_at}}</small>
+	                  </div>
+	                </div>
+	              </div>
+	            </div>
+            @endforeach
+          </div>
+        </div>
+@endsection	
+
+	**** show.blade.php ****
+	
+@extends('layout')
+@section('content')
+    <main role="main">
+
+      <section class="jumbotron text-center">
+        <div class="container">
+          <h1 class="jumbotron-heading">{{$post->title}}</h1>
+          <p class="lead text-muted">{{$post->descr}}</p>
+        </div>
+      </section>
+      <p class="text-center lead text-muted">Updated at {{$post->updated_at}}</p>
+
+    </main>
+@endsection
+
+ ******** ======== User Authentification ============ ********
+ 
+ 1) - php artisan make:auth // -- создаются страницы, модели и контроллеры
+ 2) - php artisan migrate // -- создаются таблицы для контроля пользователей 
+ 
+******** ======== Mail Sending ============ ********
+
+1) create file mail.blade.php in views folder with message text
+2) - php artisan make:controller MailController 
+3) create method send in MailController
+
+	use Mail;
+
+	class MailController extends Controller
+	{
+		public function send(){
+			Mail::send(['text'=>'mail'], ['name','WebBlog'], function($message){
+					$message->to('sergey.levitskiy.sl@gmail.com', 'TechSupport')->subject('Mail Topic');
+					$message->from('leviserg@rambler.ru', 'TechSupport');
+			});
+		}
+	}
+
+4) set mailer parameter in .env (smtp server, port, user_mail & password, encryption) - same as OpenServer
+
+---------------------------- m a i l ----------- cont ---------
+
+- php artisan make:mail newMail --markdown=email // console
+
+В папке app/mail функцию build отредактировать, указав адрес получателя, отправителя и файл текста (markdown)
+
+    public function build()
+    {
+        return $this->markdown('email')->to('sergey.levitskiy.sl@gmail.com')->from('leviserg@rambler.ru');
+    }
+
+Контроллер почты отредактировать, указав способ отправки как новый класс :
+
+    public function send(){
+		Mail::send(new newMail());
+    }
+	
+и там же возвратить вид страницы текста сообщения для метода markdown объекта newMail
+
+    public function email(){
+    	return view('email'); // находится в папке resources/views/email.blade.php - создается автоматически по консольной команде
+    }
+
+--------------------------- pagination -----------------------------------
+1) create file pagination.blade.php in resources/views folder
+	
+2)	- php artisan make:controller Pagination // console
+
+3) пагинация в контроллере 
+
+		$posts = App\Post::paginate(3); (1,2,3,4...)
+		
+		или
+		
+    	$posts = App\Post::simplePaginate(3); (prev, next)
+
+4) пагинация на странице вывода (после цикла @foreach -> @endforeach
+
+	{{$posts->links()}}
+
+	

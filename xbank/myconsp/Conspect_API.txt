@@ -1,0 +1,62 @@
+
+	cd C:\OSPanel\domains
+	composer create-project --prefer-dist laravel/laravel ybank.com
+		... wait ... for creation...
+-------------------------------------------------------------------------------
+подключение к БД в файле .env
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ybankdb
+DB_USERNAME=root
+DB_PASSWORD=
+
+ а также config/database.php (default etc)
+-------------------------------------------------------------------------------
+	Tables in DB:
+ reports
+ customers
+ trasnactions
+	Console commands
+ php artisan make:migration create_reports_table --create=reports
+ php artisan make:migration create_customers_table --create=customers
+ php artisan make:migration create_transactions_table --create=transactions
+ 
+ edit migration.php file according to necessary table headers
+ 
+ php artisan migrate
+ 
+ php artisan make:model Transaction
+ php artisan make:model Report
+ php artisan make:model Customer
+
+ php artisan make:controller TransactionController --resource
+ php artisan make:controller CustomerController --resource
+ php artisan make:controller ReportController --resource
+ 
+ Set Routes in routes/api.php
+ 
+ /*
+Route::get('transactions','TransactionController@index');
+Route::get('transaction/{id}','TransactionController@edit');
+Route::put('transaction','TransactionController@store');
+Route::post('transaction/{id}','TransactionController@update');
+Route::delete('transaction/{id}','TransactionController@destroy');
+ */
+ 
+ Create resource Transaction:
+ php artisan make:resource TransactionResource
+ 
+ TransactionController->header:
+use App\Http\Requests;
+use App\Transaction;
+use App\Http\Resources\TransactionResource;
+ 
+  TransactionController->index:
+  
+        $transactions = Transaction::paginate(5);
+        return TransactionResource::collection($transactions);
+ npm -v
+ npm install
+ npm run watch    !!!!  recompile

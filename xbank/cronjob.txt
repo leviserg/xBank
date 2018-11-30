@@ -1,0 +1,1 @@
+0 47 23 1/2 * ? *  ReportController->insert
